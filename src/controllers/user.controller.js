@@ -1,6 +1,6 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
-import { User } from './Models/user.model.js'; 
+import { User } from '../models/user.model.js'; 
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 
@@ -44,8 +44,11 @@ const registerUser = asyncHandler( async( req, res ) => {
     if(existedUser) {
         throw new ApiError(409, "User already exists with this username or email");
     }
-
-    const avatarLocalPath = req.files?.avatar[0]?.path;
+    
+    console.log("req.files:", req.files);
+    console.log("req.files.avatar:", req.files.avatar);
+    console.log("req.files.coverImage:", req.files.coverImage);
+    const avatarLocalPath = req.files?.avatar[0]?.path; 
     // const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
     let coverImageLocalPath;
@@ -94,8 +97,9 @@ const LoginUser = asyncHandler( async( req, res ) => {
     // send cookie
 
     const {email, username, password} = req.body;
+    console.log("email:", email, "username:", username);
 
-    if (!(username || email)) {
+    if (!username && !email) {
         throw new ApiError(400, "Email or Username is required to login");
     }
 
@@ -107,7 +111,8 @@ const LoginUser = asyncHandler( async( req, res ) => {
         throw new ApiError(404, "User not found with this email or username");
     }
 
-    const isPasswordValid = await user.isPasswordCorrect(password);
+    const isPasswordValid = await user.isPasswordCorrect(password)
+    console.log("isPasswordValid:", isPasswordValid);
 
     if(!isPasswordValid) {
         throw new ApiError(401, "Invalid password");
@@ -118,12 +123,12 @@ const LoginUser = asyncHandler( async( req, res ) => {
 
     const loggedUser = await User.findById(user._id).select("-password -refreshToken")
 
-    const cookieOptions = {
+    const options = {
         httpOnly: true,
         secure: true
     }
 
-    return res.status(200).cookie("accessToken", accessToken, cookieOptions).cookie("refreshToken", refreshToken, cookieOptions)
+    return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options)
     .json(
         new ApiResponse(200, { user: loggedUser, accessToken, refreshToken }, "User logged in successfully")
     )
